@@ -1,0 +1,28 @@
+## The following workflow is executed in two events: 
+# 1. When changes are pushed to any branches in remote repository(in this case, Mock Users).
+# 2. When changes are pushed to any branches in the CF automation repository.
+# Manually - To trigger the workflow manually, visit github repository / actions /workflows
+
+on:
+  push:
+    branches: 
+      - '*'
+
+name: Random Sanity Tests
+
+## All jobs are executed for every workflow run
+jobs:
+  run_automation_tests:
+    name: Run automated scripts to verify sanity checklist in  3.0 application
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - id: install_cypress
+      run: npm install cypress
+    - id: test_installation
+      run: npx cypress --help
+## Cypress Record Key is is a unique identifier used for verifying user is authenticated with the cypress dashboard
+## It is saved at repository level under Secrets for the same repository
+    - id: trigger_cypress
+## needs the aforementioned steps, install and test_installation in order to execute this job
+      run: npx cypress run --record --key ${{ secrets.Cypress_Record_Key }} 
