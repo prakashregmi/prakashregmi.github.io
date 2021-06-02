@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - id: test_installation
       run: npm install cypress
     - id: test_installation
       run: echo 'abc' >>test.txt 
