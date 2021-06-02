@@ -19,7 +19,7 @@ jobs:
     - uses: actions/checkout@v2
     - run: npm install cypress
     - run: npx cypress --help
-  run_automation_tests:
+  artifacts:
     name: create sample file and push artifacts
     runs-on: ubuntu-latest
     steps:
@@ -33,6 +33,10 @@ jobs:
         name: my-artifact
         path: test.txt
         comment:
+  push_comment:
+    name: post comment in PR
+    runs-on: ubuntu-latest
+    steps:
     - uses: actions/github-script@v3
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
