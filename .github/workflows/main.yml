@@ -13,16 +13,26 @@ name: Random Sanity Tests
 ## All jobs are executed for every workflow run
 jobs:
   run_automation_tests:
-    name: Run automated scripts to verify sanity checklist in  3.0 application
+    name: install cypress
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - id: install_cypress
+    - uses: actions/checkout@v2
+    - run: npm install cypress
+    - run: npx cypress --help
+  run_automation_tests:
+    name: create sample file and push artifacts
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
       run: npm install cypress
     - id: test_installation
-      run: npx cypress --help
+      run: echo 'abc' >>test.txt 
+    - uses: actions/upload-artifact@v2
+      with:
+        name: my-artifact
+        path: test.txt
 ## Cypress Record Key is is a unique identifier used for verifying user is authenticated with the cypress dashboard
 ## It is saved at repository level under Secrets for the same repository
-    - id: trigger_cypress
-## needs the aforementioned steps, install and test_installation in order to execute this job
-      run: npx cypress run --record --key ${{ secrets.Cypress_Record_Key }} 
+#     - id: trigger_cypress
+# ## needs the aforementioned steps, install and test_installation in order to execute this job
+#       run: npx cypress run --record --key ${{ secrets.Cypress_Record_Key }} 
