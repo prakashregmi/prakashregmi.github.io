@@ -12,27 +12,7 @@ name: Random Sanity Tests
 
 ## All jobs are executed for every workflow run
 jobs:
-  run_automation_tests:
-    name: install cypress
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - run: npm install cypress
-    - run: npx cypress --help
-  artifacts:
-    name: create sample file and push artifacts
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - id: cy_install
-      run: npm install cypress
-    - id: test_installation
-      run: echo 'abc' >>test.txt 
-    - uses: actions/upload-artifact@v2
-      with:
-        name: my-artifact
-        path: test.txt
-  comment:
+  posts_message:
     runs-on: ubuntu-latest
     env:
       URL: ${{ github.event.pull_request.comments_url }}
