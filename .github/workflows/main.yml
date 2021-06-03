@@ -5,24 +5,38 @@
 
 on:
   push:
-    branches: 
-      - '*'
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
-name: Random Sanity Tests
+name: Workflow test
 
 ## All jobs are executed for every workflow run
 jobs:
-  run_automation_tests:
-    name: Run automated scripts to verify sanity checklist in  3.0 application
+  build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - id: install_cypress
-      run: npm install cypress
-    - id: test_installation
-      run: npx cypress --help
-## Cypress Record Key is is a unique identifier used for verifying user is authenticated with the cypress dashboard
-## It is saved at repository level under Secrets for the same repository
-    - id: trigger_cypress
-## needs the aforementioned steps, install and test_installation in order to execute this job
-      run: npx cypress run --record --key ${{ secrets.Cypress_Record_Key }} 
+    - name: install cypress
+      id: cypress
+      run: |
+        npm install cypress
+        npx cypress --help
+    - name: create sample image and push artifacts
+      run:  curl https://www.python.org/static/apple-touch-icon-144x144-precomposed.png > image.png
+    - uses: actions/upload-artifact@v2
+      with:
+        name: my-artifact
+        path: image.png
+    - uses: actions/download-artifact@v1
+      with:
+        name: my-artifact
+    - uses: actions/github-script@v4
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          github.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '👋 Thanks for reporting!'
+          })
