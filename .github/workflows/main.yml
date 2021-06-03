@@ -32,22 +32,16 @@ jobs:
       with:
         name: my-artifact
         path: test.txt
-  push_comment:
-    name: post comment in PR
+  comment:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/github-script@v3
-      with:
-        github-token: ${{secrets.GITHUB_TOKEN}}
-        script: |
-          github.pull_request.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '👋 Thanks for reporting!'
-          })
-## Cypress Record Key is is a unique identifier used for verifying user is authenticated with the cypress dashboard
-## It is saved at repository level under Secrets for the same repository
-#     - id: trigger_cypress
-# ## needs the aforementioned steps, install and test_installation in order to execute this job
-#       run: npx cypress run --record --key ${{ secrets.Cypress_Record_Key }} 
+      - uses: actions/github-script@v4
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '👋 Thanks for reporting!'
+            })
