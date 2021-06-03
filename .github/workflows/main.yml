@@ -9,21 +9,31 @@ on:
   pull_request:
     branches: [ master ]
 
-name: Random Sanity Tests
+name: Workflow test
 
 ## All jobs are executed for every workflow run
 jobs:
-  posts_message:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/github-script@v3
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            github.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '👋 Thanks for reporting!'
-            })
+    - name: install cypress
+      id: cypress
+      run: |
+        npm install cypress
+        npx cypress --help
+    - name: create sample image and push artifacts
+      run:  curl https://www.python.org/static/apple-touch-icon-144x144-precomposed.png > image.png
+    - uses: actions/upload-artifact@v2
+      with:
+        name: my-artifact
+        path: image.png
+    - uses: actions/github-script@v4
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          github.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '👋 Thanks for reporting!'
+          })
