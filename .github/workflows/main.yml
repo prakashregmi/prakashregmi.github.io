@@ -5,8 +5,9 @@
 
 on:
   push:
-    branches: 
-      - '*'
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 name: Random Sanity Tests
 
@@ -14,16 +15,15 @@ name: Random Sanity Tests
 jobs:
   posts_message:
     runs-on: ubuntu-latest
-    env:
-      URL: ${{ github.event.pull_request.comments_url }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - name: Add comment to PR
-        run: |
-          curl \
-            -X POST \
-            $URL \
-            -H "Content-Type: application/json" \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            --data '{ "body": "blah blah" }'
+      - uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '👋 Thanks for reporting!'
+            })
