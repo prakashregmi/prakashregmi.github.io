@@ -38,7 +38,7 @@ jobs:
     steps:
     - name: Add comment to PR
       env:
-        PR_COMMENT_URL: ${{ github.event.pull_request.comments_url }}
+        PR_COMMENT_URL: ${{ github.event.issues.comments_url }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         curl -X POST $PR_COMMENT_URL \
