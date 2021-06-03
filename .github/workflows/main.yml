@@ -34,6 +34,7 @@ jobs:
         path: test.txt
   push_comment:
     name: post comment in PR
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/github-script@v3
       with:
