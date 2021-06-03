@@ -33,15 +33,15 @@ jobs:
         name: my-artifact
         path: test.txt
   comment:
-    name: comment in PR
     runs-on: ubuntu-latest
     steps:
-    - name: Add comment to PR
-      env:
-        PR_COMMENT_URL: ${{ github.event.issues.comments_url }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        curl -X POST $PR_COMMENT_URL \
-          -H "Content-Type: application/vnd.github.v3.raw+json" \
-          -H "Authorization: token $GITHUB_TOKEN" \
-          --data '{ "body": "test" }'
+      - uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '👋 Thanks for reporting!'
+            })
