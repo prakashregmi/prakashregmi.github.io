@@ -35,16 +35,13 @@ jobs:
   comment:
     name: comment in PR
     runs-on: ubuntu-latest
-
     steps:
     - name: Add comment to PR
       env:
-        URL: ${{ github.event.pull_request.comments_url }}
+        PR_COMMENT_URL: ${{ github.event.pull_request.comments_url }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        curl \
-          -X POST \
-          $URL \
-          -H "Content-Type: application/json" \
+        curl -X POST $PR_COMMENT_URL \
+          -H "Content-Type: application/vnd.github.v3.raw+json" \
           -H "Authorization: token $GITHUB_TOKEN" \
-          --data '{ "body": "blah blah" }'
+          --data '{ "body": "test" }'
