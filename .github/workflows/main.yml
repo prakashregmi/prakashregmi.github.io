@@ -27,6 +27,9 @@ jobs:
       with:
         name: my-artifact
         path: image.png
+    - uses: actions/download-artifact@v1
+        with:
+          name: my-artifact
     - uses: actions/github-script@v4
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
