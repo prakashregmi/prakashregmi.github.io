@@ -1,4 +1,4 @@
-name: 🚀 Dynamic Release Creator
+name: 🚀 Create Release Tag
 
 # 1. Workflow Trigger: Manual dispatch allows user to select version type
 on:
@@ -72,11 +72,15 @@ jobs:
           # Also export the latest tag found for the changelog step
           echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
-      # 3. New Step: Generate Changelog using Git log since the last tag
-      - name: Generate Changelog
+      # 3. New Step: Generate Changelog and Get SHA
+      - name: Generate Changelog and Get SHA
         id: changelog
         run: |
           LAST_TAG="${{ steps.calculate_version.outputs.last_tag }}"
+          
+          # Get the first 8 characters of the current commit SHA
+          CURRENT_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-8)
+          echo "short_sha=$CURRENT_SHA_SHORT" >> $GITHUB_OUTPUT # Export SHA
           
           echo "Generating log from tag: $LAST_TAG"
 
@@ -107,9 +111,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.calculate_version.outputs.next_tag }}
-          name: Release ${{ steps.calculate_version.outputs.next_tag }}
+          # Release name now includes the short commit hash
+          name: Release ${{ steps.calculate_version.outputs.next_tag }} (${{ steps.changelog.outputs.short_sha }})
           body: |
             ## Release Details
+            
+            Commit SHA: `${{ steps.changelog.outputs.short_sha }}`
             
             This release was automatically generated with a **${{ github.event.inputs.version_type }}** version bump.
             
