@@ -72,7 +72,7 @@ jobs:
           # Also export the latest tag found for the changelog step
           echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
-      # 3. New Step: Generate Changelog and Get SHA
+      # 3. New Step: Generate Changelog and Get SHA (UPDATED)
       - name: Generate Changelog and Get SHA
         id: changelog
         run: |
@@ -84,19 +84,47 @@ jobs:
           
           echo "Generating log from tag: $LAST_TAG"
 
-          # Use a format that looks good in Markdown, listing commit subjects and authors
-          # If LATEST_TAG is 0.0.0 (no tags), generate log for all history.
+          # Log range setup
           if [ "$LAST_TAG" == "0.0.0" ]; then
             LOG_RANGE=""
           else
-            # Log commits between the last tag and HEAD
+            # Log commits between the last tag and HEAD. We keep merge commits in case they contain PR info.
             LOG_RANGE="$LAST_TAG..HEAD"
           fi
 
-          # Format: * Commit Subject (by @author)
-          CHANGELOG=$(git log --pretty=format:'* %s (by %ae)' $LOG_RANGE --no-merges)
+          # Log format: Subject|AuthorName
+          LOG_OUTPUT=$(git log --pretty=format:'%s|%an' $LOG_RANGE)
 
-          # Multiline output needs special handling for GITHUB_OUTPUT
+          CHANGELOG=""
+          # Process the log output line by line
+          while IFS='|' read -r SUBJECT AUTHOR
+          do
+            # Check if the SUBJECT ends with a PR number pattern: "Title (#PR_NUMBER)"
+            # BASH_REMATCH[1] will capture the Title
+            # BASH_REMATCH[2] will capture the PR_NUMBER
+            if [[ "$SUBJECT" =~ ^(.*)\s\(\#([0-9]+)\)$ ]]; then
+              TITLE="${BASH_REMATCH[1]}"
+              PR_NUMBER="${BASH_REMATCH[2]}"
+              
+              # Construct the PR link using GitHub environment variables
+              PR_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/${PR_NUMBER}"
+              
+              # Format: * Clean Title ([#PR_NUMBER](PR_URL)) (by @author)
+              LINE="* ${TITLE} ([#${PR_NUMBER}](${PR_URL})) (by @${AUTHOR})"
+            else
+              # Fallback for commits without a PR number (e.g., initial commit, direct push)
+              # Format: * Subject (by @author)
+              LINE="* ${SUBJECT} (by @${AUTHOR})"
+            fi
+            
+            # Append the line to the changelog with a newline
+            CHANGELOG="${CHANGELOG}${LINE}\n"
+          done <<< "$LOG_OUTPUT"
+
+          # Use sed to remove any blank lines (e.g., if LOG_OUTPUT was empty)
+          CHANGELOG=$(echo -e "$CHANGELOG" | sed '/^$/d')
+
+          # Export the final formatted changelog
           echo "changelog<<EOF_CHANGELOG" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF_CHANGELOG" >> $GITHUB_OUTPUT
