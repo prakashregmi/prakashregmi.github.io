@@ -94,7 +94,7 @@ jobs:
           fi
 
           # Format: * Commit Subject (by @author)
-          CHANGELOG=$(git log --pretty=format:'* %s (by @%an)' $LOG_RANGE --no-merges)
+          CHANGELOG=$(git log --pretty=format:'* %s (by %ae)' $LOG_RANGE --no-merges)
 
           # Multiline output needs special handling for GITHUB_OUTPUT
           echo "changelog<<EOF_CHANGELOG" >> $GITHUB_OUTPUT
