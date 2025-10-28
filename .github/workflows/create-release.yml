@@ -1,4 +1,4 @@
-name: 🚀 Create Release Tag
+name: 🚀 Dynamic Release Creator
 
 # 1. Workflow Trigger: Manual dispatch allows user to select version type
 on:
@@ -130,3 +130,22 @@ jobs:
             
           draft: false
           prerelease: false
+
+      # 5. New Step: Force Tag ci/prod to the released commit
+      - name: Force Tag ci/prod and Push
+        # We need the GITHUB_TOKEN to perform the forced push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Configuring git identity..."
+          # Configure git identity for the push
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          
+          echo "Force-creating ci/prod tag on current commit..."
+          # Force create/move the ci/prod tag to the current commit
+          git tag -f ci/prod
+          
+          echo "Force-pushing ci/prod tag to origin..."
+          # Force push the ci/prod tag to the remote
+          git push origin ci/prod -f
