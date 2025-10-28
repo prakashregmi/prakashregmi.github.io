@@ -1,0 +1,125 @@
+name: 🚀 Dynamic Release Creator
+
+# 1. Workflow Trigger: Manual dispatch allows user to select version type
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Type of version bump (minor or patch)'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - minor # 1.1.0 -> 1.2.0
+          - patch # 1.1.0 -> 1.1.1
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create the tag and release
+
+    steps:
+      - name: Checkout code (fetch all tags)
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history including tags to determine the latest version
+          fetch-depth: 0
+
+      # 2. Logic: Find the latest tag and calculate the next version
+      - name: Calculate Next Version
+        id: calculate_version
+        run: |
+          # Find the latest tag. If no tags exist, default to 0.0.0.
+          # The 2>/dev/null suppresses errors if no tags are found.
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          echo "Last Tag Found: $LATEST_TAG"
+
+          # Use sed to strip any leading 'v' (case-insensitive) and tr to replace dots with spaces
+          VERSION_NUMBERS=$(echo $LATEST_TAG | sed 's/^v//I' | tr '.' ' ')
+          
+          # Use awk to split the version string into MAJOR, MINOR, PATCH
+          MAJOR=$(echo $VERSION_NUMBERS | awk '{print $1}' || echo "0")
+          MINOR=$(echo $VERSION_NUMBERS | awk '{print $2}' || echo "0")
+          PATCH=$(echo $VERSION_NUMBERS | awk '{print $3}' || echo "0")
+
+          # Default to 0 if parsing fails
+          MAJOR=${MAJOR:-0}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
+
+          VERSION_TYPE="${{ github.event.inputs.version_type }}"
+          NEXT_TAG=""
+
+          if [ "$VERSION_TYPE" == "minor" ]; then
+            # Bump Minor: M.m.p -> M.(m+1).0
+            NEW_MINOR=$((MINOR + 1))
+            NEW_PATCH=0
+            NEXT_TAG="$MAJOR.$NEW_MINOR.$NEW_PATCH"
+          elif [ "$VERSION_TYPE" == "patch" ]; then
+            # Bump Patch: M.m.p -> M.m.(p+1)
+            NEW_PATCH=$((PATCH + 1))
+            NEXT_TAG="$MAJOR.$MINOR.$NEW_PATCH"
+          else
+            echo "::error::Invalid version_type specified: $VERSION_TYPE. Must be 'minor' or 'patch'."
+            exit 1
+          fi
+
+          echo "Next Tag Calculated: $NEXT_TAG"
+          
+          # Set the calculated tag as an output variable for the next step
+          echo "next_tag=$NEXT_TAG" >> $GITHUB_OUTPUT
+          # Also export the latest tag found for the changelog step
+          echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      # 3. New Step: Generate Changelog using Git log since the last tag
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          LAST_TAG="${{ steps.calculate_version.outputs.last_tag }}"
+          
+          echo "Generating log from tag: $LAST_TAG"
+
+          # Use a format that looks good in Markdown, listing commit subjects and authors
+          # If LATEST_TAG is 0.0.0 (no tags), generate log for all history.
+          if [ "$LAST_TAG" == "0.0.0" ]; then
+            LOG_RANGE=""
+          else
+            # Log commits between the last tag and HEAD
+            LOG_RANGE="$LAST_TAG..HEAD"
+          fi
+
+          # Format: * Commit Subject (by @author)
+          CHANGELOG=$(git log --pretty=format:'* %s (by @%an)' $LOG_RANGE --no-merges)
+
+          # Multiline output needs special handling for GITHUB_OUTPUT
+          echo "changelog<<EOF_CHANGELOG" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF_CHANGELOG" >> $GITHUB_OUTPUT
+
+      # 4. Action: Create the new Git Tag and GitHub Release
+      - name: Create GitHub Release and Tag
+        uses: softprops/action-gh-release@v2
+        # Only run if the tag calculation was successful
+        if: steps.calculate_version.outputs.next_tag != ''
+        env:
+          # GITHUB_TOKEN is automatically provided by GitHub Actions
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.calculate_version.outputs.next_tag }}
+          name: Release ${{ steps.calculate_version.outputs.next_tag }}
+          body: |
+            ## Release Details
+            
+            This release was automatically generated with a **${{ github.event.inputs.version_type }}** version bump.
+            
+            Based on previous tag: `${{ steps.calculate_version.outputs.last_tag }}`
+            
+            ---
+            
+            ## Changelog
+            
+            ${{ steps.changelog.outputs.changelog }}
+            
+          draft: false
+          prerelease: false
