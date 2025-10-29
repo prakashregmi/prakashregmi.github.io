@@ -32,7 +32,7 @@ jobs:
         run: |
           # Find the latest tag. If no tags exist, default to 0.0.0.
           # The 2>/dev/null suppresses errors if no tags are found.
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          LATEST_TAG=$(git describe --tags --abbrev=0 --exclude='ci/*' 2>/dev/null || echo "0.0.0")
           echo "Last Tag Found: $LATEST_TAG"
 
           # Use sed to strip any leading 'v' (case-insensitive) and tr to replace dots with spaces
