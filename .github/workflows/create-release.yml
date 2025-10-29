@@ -108,30 +108,13 @@ jobs:
       # 4. Action: Create the new Git Tag and GitHub Release
       - name: Create GitHub Release and Tag
         uses: softprops/action-gh-release@v2
-        # Only run if the tag calculation was successful
         if: steps.calculate_version.outputs.next_tag != ''
         env:
-          # GITHUB_TOKEN is automatically provided by GitHub Actions
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.calculate_version.outputs.next_tag }}
-          # Release name now includes the short commit hash
           name: Release ${{ steps.calculate_version.outputs.next_tag }} (${{ steps.changelog.outputs.short_sha }})
-          body: |
-            ## Release Details
-            
-            Commit SHA: `${{ steps.changelog.outputs.short_sha }}`
-            
-            This release was automatically generated with a **${{ github.event.inputs.version_type }}** version bump.
-            
-            Based on previous tag: `${{ steps.calculate_version.outputs.last_tag }}`
-            
-            ---
-            
-            ## Changelog
-            
-            ${{ steps.changelog.outputs.changelog }}
-            
+          generate_release_notes: true
           draft: false
           prerelease: false
 
