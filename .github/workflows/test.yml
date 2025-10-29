@@ -1,0 +1,35 @@
+name: dummy flow
+
+# 1. Workflow Trigger: Manual dispatch allows user to select version type
+on:
+  push:
+    tags:
+      - ci/prod
+
+jobs:
+  dummy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create the tag and release
+    steps:
+      - name: Checkout Code
+        # Fetches the repository content, which is necessary for most jobs.
+        uses: actions/checkout@v4
+      - name: Get Tag Name
+        # Extracts the actual tag name (e.g., 'v1.0.0') from the full git reference (e.g., 'refs/tags/v1.0.0').
+        id: tag_info
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+      - name: Confirm Execution and Tag Used
+        # A simple test step to verify the workflow ran and extracted the tag correctly.
+        run: |
+          echo "--- Workflow Triggered Successfully ---"
+          echo "This job confirms that the tag-gating logic worked."
+          echo "The tag used for this execution is: ${{ steps.tag_info.outputs.tag }}"
+      - name: Placeholder for Release or Deployment Logic
+        # Replace this step with your actual build, package, and release commands.
+        run: |
+          echo "Starting actual release process using tag: ${{ steps.tag_info.outputs.tag }}"
+          # Example: Using the tag name to create a release via GitHub CLI
+          # gh release create ${{ steps.tag_info.outputs.tag }} --title "Official Release ${{ steps.tag_info.outputs.tag }}"
