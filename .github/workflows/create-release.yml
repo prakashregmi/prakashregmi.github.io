@@ -1,7 +1,7 @@
 name: 🚀 Create Release Tag
 
   # 1. Workflow Trigger: Manual dispatch allows user to select version type
-  on:
+on:
     workflow_dispatch:
       inputs:
         version_type:
@@ -13,7 +13,7 @@ name: 🚀 Create Release Tag
             - minor # 1.1.0 -> 1.2.0
             - patch # 1.1.0 -> 1.1.1
 
-  jobs:
+jobs:
     create_release:
       runs-on: ubuntu-latest
       permissions:
