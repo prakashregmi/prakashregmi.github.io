@@ -25,6 +25,7 @@ jobs:
           with:
             # Fetch full history including tags to determine the latest version
             fetch-depth: 0
+            token: ${{ secrets.PAT_TOKEN_PRAKASH }}
 
         # 2. Logic: Find the latest tag and calculate the next version
         - name: Calculate Next Version
@@ -93,13 +94,7 @@ jobs:
         # 4. New Step: Force Tag ci/prod to the released commit
         - name: Force Tag ci/prod and Push
           # We need the GITHUB_TOKEN to perform the forced push
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
-            echo "Configuring git identity..."
-            # Configure git identity for the push
-            git config user.name github-actions[bot]
-            git config user.email github-actions[bot]@users.noreply.github.com
             
             echo "Force-creating ci/prod tag on current commit..."
             # Force create/move the ci/prod tag to the current commit
