@@ -72,7 +72,12 @@ jobs:
             # Also export the latest tag found for the changelog step
             echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
-        # 3. Action: Create the new Git Tag and GitHub Release
+        # 3. Get Short SHA
+        - name: Get Short SHA
+          id: sha
+          run: echo "short_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+        # 4. Action: Create the new Git Tag and GitHub Release
         - name: Create GitHub Release and Tag
           uses: softprops/action-gh-release@v2
           if: steps.calculate_version.outputs.next_tag != ''
@@ -80,7 +85,7 @@ jobs:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             tag_name: ${{ steps.calculate_version.outputs.next_tag }}
-            name: Release ${{ steps.calculate_version.outputs.next_tag }} (${{ github.sha }})
+            name: Release ${{ steps.calculate_version.outputs.next_tag }} (${{ steps.sha.outputs.short_sha }})
             generate_release_notes: true
             draft: false
             prerelease: false
