@@ -82,8 +82,6 @@ jobs:
         - name: Create GitHub Release and Tag
           uses: softprops/action-gh-release@v2
           if: steps.calculate_version.outputs.next_tag != ''
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             tag_name: ${{ steps.calculate_version.outputs.next_tag }}
             name: Release ${{ steps.calculate_version.outputs.next_tag }} (${{ steps.sha.outputs.short_sha }})
@@ -93,7 +91,6 @@ jobs:
 
         # 4. New Step: Force Tag ci/prod to the released commit
         - name: Force Tag ci/prod and Push
-          # We need the GITHUB_TOKEN to perform the forced push
           run: |
             
             echo "Force-creating ci/prod tag on current commit..."
