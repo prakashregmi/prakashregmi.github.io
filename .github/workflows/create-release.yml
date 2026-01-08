@@ -1,6 +1,5 @@
-name: 🚀 Create Release Tag
+name: Create Release Tag
 
-  # 1. Workflow Trigger: Manual dispatch allows user to select version type
 on:
     workflow_dispatch:
       inputs:
@@ -10,41 +9,42 @@ on:
           default: 'minor'
           type: choice
           options:
-            - minor # 1.1.0 -> 1.2.0
-            - patch # 1.1.0 -> 1.1.1
+            - minor
+            - patch
+        service:
+          description: 'Service name for the release'
+          required: true
+          default: 'go'
+          type: choice
+          options:
+            - go
+            - orkes
 
 jobs:
     create_release:
       runs-on: ubuntu-latest
       permissions:
-        contents: write # Required to create the tag and release
+        contents: write
 
       steps:
         - name: Checkout code (fetch all tags)
           uses: actions/checkout@v4
           with:
-            # Fetch full history including tags to determine the latest version
             fetch-depth: 0
             token: ${{ secrets.PAT_TOKEN_PRAKASH }}
 
-        # 2. Logic: Find the latest tag and calculate the next version
         - name: Calculate Next Version
           id: calculate_version
           run: |
-            # Find the latest tag. If no tags exist, default to 0.0.0.
-            # The 2>/dev/null suppresses errors if no tags are found.
             LATEST_TAG=$(git describe --tags --abbrev=0 --exclude='ci/*' 2>/dev/null || echo "0.0.0")
             echo "Last Tag Found: $LATEST_TAG"
 
-            # Use sed to strip any leading 'v' (case-insensitive) and tr to replace dots with spaces
             VERSION_NUMBERS=$(echo $LATEST_TAG | sed 's/^v//I' | tr '.' ' ')
-            
-            # Use awk to split the version string into MAJOR, MINOR, PATCH
+
             MAJOR=$(echo $VERSION_NUMBERS | awk '{print $1}' || echo "0")
             MINOR=$(echo $VERSION_NUMBERS | awk '{print $2}' || echo "0")
             PATCH=$(echo $VERSION_NUMBERS | awk '{print $3}' || echo "0")
 
-            # Default to 0 if parsing fails
             MAJOR=${MAJOR:-0}
             MINOR=${MINOR:-0}
             PATCH=${PATCH:-0}
@@ -53,12 +53,10 @@ jobs:
             NEXT_TAG=""
 
             if [ "$VERSION_TYPE" == "minor" ]; then
-              # Bump Minor: M.m.p -> M.(m+1).0
               NEW_MINOR=$((MINOR + 1))
               NEW_PATCH=0
               NEXT_TAG="$MAJOR.$NEW_MINOR.$NEW_PATCH"
             elif [ "$VERSION_TYPE" == "patch" ]; then
-              # Bump Patch: M.m.p -> M.m.(p+1)
               NEW_PATCH=$((PATCH + 1))
               NEXT_TAG="$MAJOR.$MINOR.$NEW_PATCH"
             else
@@ -67,36 +65,29 @@ jobs:
             fi
 
             echo "Next Tag Calculated: $NEXT_TAG"
-            
-            # Set the calculated tag as an output variable for the next step
+
             echo "next_tag=$NEXT_TAG" >> $GITHUB_OUTPUT
-            # Also export the latest tag found for the changelog step
             echo "last_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
-        # 3. Get Short SHA
         - name: Get Short SHA
           id: sha
           run: echo "short_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
-        # 4. Action: Create the new Git Tag and GitHub Release
         - name: Create GitHub Release and Tag
           uses: softprops/action-gh-release@v2
           if: steps.calculate_version.outputs.next_tag != ''
           with:
             tag_name: ${{ steps.calculate_version.outputs.next_tag }}
-            name: Release ${{ steps.calculate_version.outputs.next_tag }} (${{ steps.sha.outputs.short_sha }})
+            name: ${{github.event.inputs.service}} - Release ${{ steps.calculate_version.outputs.next_tag }} (${{ steps.sha.outputs.short_sha }})
             generate_release_notes: true
             draft: false
             prerelease: false
 
-        # 4. New Step: Force Tag ci/prod to the released commit
         - name: Force Tag ci/prod and Push
+        if: github.event.inputs.service == 'go'
           run: |
-            
             echo "Force-creating ci/prod tag on current commit..."
-            # Force create/move the ci/prod tag to the current commit
             git tag -f ci/prod
-            
+
             echo "Force-pushing ci/prod tag to origin..."
-            # Force push the ci/prod tag to the remote
             git push origin ci/prod -f
