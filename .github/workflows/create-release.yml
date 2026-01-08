@@ -84,7 +84,7 @@ jobs:
             prerelease: false
 
         - name: Force Tag ci/prod and Push
-        if: github.event.inputs.service == 'go'
+          if: github.event.inputs.service == 'go'
           run: |
             echo "Force-creating ci/prod tag on current commit..."
             git tag -f ci/prod
