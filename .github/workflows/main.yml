@@ -1,42 +1,66 @@
-## The following workflow is executed in two events: 
-# 1. When changes are pushed to any branches in remote repository(in this case, Mock Users).
-# 2. When changes are pushed to any branches in the CF automation repository.
-# Manually - To trigger the workflow manually, visit github repository / actions /workflows
+name: Tag Application
 
 on:
-  push:
-    branches: [ abc ]
-  pull_request:
-    branches: [ abc ]
+  workflow_dispatch:
+    inputs:
+      application:
+        description: 'Select application'
+        required: true
+        type: choice
+        options:
+          - orkes
+          - encord_agent_service
+          - agent_service
+          - app
+      branch:
+        description: 'Branch to tag'
+        required: true
+        default: 'main'
+      environment:
+        description: 'Select environment'
+        required: true
+        type: choice
+        options:
+          - prod
+          - staging
+          - dev-1
+          - dev-2
 
-name: Workflow test
-
-## All jobs are executed for every workflow run
 jobs:
-  build:
+  tag:
     runs-on: ubuntu-latest
     steps:
-    - name: install cypress
-      id: cypress
-      run: |
-        npm install cypress
-        npx cypress --help
-    - name: create sample image and push artifacts
-      run:  curl https://www.python.org/static/apple-touch-icon-144x144-precomposed.png > image.png
-    - uses: actions/upload-artifact@v2
-      with:
-        name: my-artifact
-        path: image.png
-    - uses: actions/download-artifact@v1
-      with:
-        name: my-artifact
-    - uses: actions/github-script@v4
-      with:
-        github-token: ${{secrets.GITHUB_TOKEN}}
-        script: |
-          github.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '👋 Thanks for reporting!'
-          })
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set tag name
+        id: tagname
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" == "prod" ]]; then
+            case "${{ github.event.inputs.application }}" in
+              agent_service)
+                TAG="ci/prod-agent";;
+              orkes)
+                TAG="ci/prod-orkes";;
+              encord_agent_service)
+                TAG="ci/prod-encord";;
+              app)
+                TAG="ci/prod-ai";;
+              *)
+                echo "Unknown application" && exit 1;;
+            esac
+          else
+            TAG="ci/${{ github.event.inputs.environment }}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        env:
+          GITHUB_TOKEN:  ${{ secrets.PAT_TOKEN_PRAKASH }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag -f ${{ steps.tagname.outputs.tag }}
+          git push origin ${{ steps.tagname.outputs.tag }} -f
