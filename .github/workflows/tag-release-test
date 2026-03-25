@@ -8,24 +8,19 @@ on:
         required: true
         type: choice
         options:
-          - orkes
-          - encord_agent_service
           - agent_service
           - app
-      branch:
-        description: 'Branch to tag'
-        required: true
-        default: 'main'
+          - encord_agent_service
+          - orkes
       environment:
         description: 'Select environment'
         required: true
         type: choice
         options:
-          - prod
           - staging
           - dev-1
           - dev-2
-
+          - prod
 jobs:
   tag:
     runs-on: ubuntu-latest
