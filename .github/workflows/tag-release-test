@@ -1,0 +1,66 @@
+name: Tag Applications
+
+on:
+  workflow_dispatch:
+    inputs:
+      application:
+        description: 'Select application'
+        required: true
+        type: choice
+        options:
+          - orkes
+          - encord_agent_service
+          - agent_service
+          - app
+      branch:
+        description: 'Branch to tag'
+        required: true
+        default: 'main'
+      environment:
+        description: 'Select environment'
+        required: true
+        type: choice
+        options:
+          - prod
+          - staging
+          - dev-1
+          - dev-2
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set tag name
+        id: tagname
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" == "prod" ]]; then
+            case "${{ github.event.inputs.application }}" in
+              agent_service)
+                TAG="ci/prod-agent";;
+              orkes)
+                TAG="ci/prod-orkes";;
+              encord_agent_service)
+                TAG="ci/prod-encord";;
+              app)
+                TAG="ci/prod-ai";;
+              *)
+                echo "Unknown application" && exit 1;;
+            esac
+          else
+            TAG="ci/${{ github.event.inputs.environment }}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        env:
+          GITHUB_TOKEN:  ${{ secrets.PAT_TOKEN_PRAKASH }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag -f ${{ steps.tagname.outputs.tag }}
+          git push origin ${{ steps.tagname.outputs.tag }} -f
