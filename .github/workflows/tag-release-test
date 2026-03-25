@@ -1,4 +1,4 @@
-name: Tag Applications
+name: Tag Application
 
 on:
   workflow_dispatch:
